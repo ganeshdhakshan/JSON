@@ -1,0 +1,127 @@
+package Execution;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+import org.testng.annotations.Test;
+
+import io.restassured.RestAssured;
+import io.restassured.http.Header;
+import io.restassured.http.Headers;
+import io.restassured.path.json.JsonPath;
+import io.restassured.response.Response;
+
+public class Runner extends Utilities  {
+
+	static Response response ;
+	
+	@Test
+	private void getListRepoActivities() throws IOException, ParseException {
+		RestAssured.baseURI =EndPoint.baseUrl;
+		RestAssured.basePath= "repos/"+getProp("owner")+"/"+getProp("repo")+"/activity";
+	
+	Header header1 = new Header("Accept", "application/vnd.github+json");
+	Header header2 = new Header("X-GitHub-Api-Version", "2022-11-28");
+	Header header3 = new Header("Authorization", "Bearer "+getProp("token"));
+		
+		List<Header>list = new ArrayList<Header>();
+		list.add(header1);
+		list.add(header2);
+		list.add(header3);
+		Headers headers = new Headers(list);
+		
+		response = RestAssured.given()
+		.headers(headers)
+//		.auth()
+//		.preemptive()
+//		.basic(getProp("username"), getProp("password"))
+//		.oauth2(EndPoint.token)
+		.log()
+		.all()
+		.get();
+	   
+		System.out.println("statuscode --> "+response.getStatusCode());
+		System.out.println("Body --> "+response.getBody().asPrettyString());
+		String resBody = response.getBody().asPrettyString();
+		
+		// data validation using JsonPath
+		
+		JsonPath path = new JsonPath(resBody);
+		String login = path.getString("[0].actor.login");
+		System.out.println("login --> "+login);
+		String id = path.getString("[0].actor.id");
+		System.out.println("id --> "+id);
+		
+		// data validation using JsonParser
+		// response structure -- JsonArray then JsonObject [{{}}]
+		// so first convert given object to JsonArray then JsonObject then corresponding key
+		
+		JSONParser json = new JSONParser();
+		Object jo1 = json.parse(resBody);
+		JSONArray array =(JSONArray)jo1;
+		JSONObject object = (JSONObject)array.get(0);
+		JSONObject object2 = (JSONObject)object.get("actor");
+		String login1 = object2.get("login").toString();
+		System.out.println("login ---> "+login1);
+	
+	}
+	@Test
+	private void getListRepository() throws IOException, ParseException {
+		RestAssured.baseURI =EndPoint.baseUrl;
+		RestAssured.basePath= "user/repos";
+	
+	Header header1 = new Header("Accept", "application/vnd.github+json");
+	Header header2 = new Header("X-GitHub-Api-Version", "2022-11-28");
+	Header header3 = new Header("Authorization", "Bearer "+getProp("token"));
+		
+		List<Header>list = new ArrayList<Header>();
+		list.add(header1);
+		list.add(header2);
+		list.add(header3);
+		Headers headers = new Headers(list);
+		
+		response = RestAssured.given()
+		.headers(headers)
+		.auth()
+		.preemptive()
+//		.basic(getProp("username"), getProp("password"))
+		.oauth2(getProp("token"))
+		.log()
+		.all()
+		.get();
+	   
+		System.out.println("statuscode --> "+response.getStatusCode());
+//		System.out.println("Body --> "+response.getBody().asPrettyString());
+		String resBody = response.getBody().asPrettyString();
+		
+		// data validation using JsonPath
+		
+		JsonPath path = new JsonPath(resBody);
+		String name = path.getString("[2].name");
+		System.out.println("login --> "+name);
+		String full_name = path.getString("[3].full_name");
+		System.out.println("full_name --> "+full_name);
+		
+		// data validation using JsonParser
+		// response structure -- JsonArray then JsonObject [{{}}]
+		// so first convert given object to JsonArray then JsonObject then corresponding key
+		
+		JSONParser json = new JSONParser();
+		Object jo1 = json.parse(resBody);
+		JSONArray array =(JSONArray)jo1;
+		JSONObject namerep = (JSONObject)array.get(2);
+		Object object2 =namerep.get("name");
+		String name1 = object2.toString();
+		System.out.println("full_name ---> "+name1);
+		JSONObject fullname = (JSONObject)array.get(3);
+		Object obj =fullname.get("full_name");
+		String name2 = obj.toString();
+		System.out.println("full_name ---> "+name2);
+	
+	}
+}
